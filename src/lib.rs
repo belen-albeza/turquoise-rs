@@ -2,8 +2,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
-const WIDTH: u32 = 640;
-const HEIGHT: u32 = 480;
+const WIDTH: u32 = 272;
+const HEIGHT: u32 = 192;
+
+const THEME: [&'static str; 4] = ["#22ccbb", "#000000", "#ffeebb", "#ffffff"];
 
 fn window() -> web_sys::Window {
     web_sys::window().expect("no global `window` exists")
@@ -52,7 +54,8 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
 }
 
 fn render(context: &web_sys::CanvasRenderingContext2d) {
-    context.clear_rect(0.0, 0.0, WIDTH as f64, HEIGHT as f64);
+    context.set_fill_style(&JsValue::from(THEME[0]));
+    context.fill_rect(0.0, 0.0, WIDTH as f64, HEIGHT as f64);
 }
 
 #[wasm_bindgen]

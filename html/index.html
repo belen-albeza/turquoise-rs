@@ -6,6 +6,10 @@
         margin: 0;
         padding: 0;
       }
+      :root {
+        --screen-scale: 3;
+      }
+
       body {
         display: grid;
         align-items: center;
@@ -17,6 +21,13 @@
         display: grid;
         grid-template-rows: auto;
         row-gap: 1rem;
+      }
+
+      canvas {
+        image-rendering: crisp-edges;
+        image-rendering: pixelated;
+        width: calc(272px * var(--screen-scale));
+        height: calc(192px * var(--screen-scale));
       }
     </style>
   </head>
