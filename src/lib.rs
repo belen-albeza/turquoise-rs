@@ -17,6 +17,12 @@ fn body() -> web_sys::HtmlElement {
     document().body().expect("no body in document")
 }
 
+fn element_by_id(id: &str) -> Option<web_sys::HtmlElement> {
+    document()
+        .get_element_by_id(id)
+        .map(|x| x.dyn_into::<web_sys::HtmlElement>().unwrap())
+}
+
 fn create_canvas(width: u32, height: u32) -> web_sys::HtmlCanvasElement {
     let canvas = document()
         .create_element("canvas")
@@ -49,10 +55,11 @@ fn render(context: &web_sys::CanvasRenderingContext2d) {
     context.clear_rect(0.0, 0.0, WIDTH as f64, HEIGHT as f64);
 }
 
-#[wasm_bindgen(start)]
-pub fn run() -> Result<(), JsValue> {
+#[wasm_bindgen]
+pub fn run(container_id: &str) -> Result<(), JsValue> {
+    let container = element_by_id(container_id).unwrap_or(body());
     let canvas = create_canvas(WIDTH, HEIGHT);
-    body()
+    container
         .append_child(&canvas)
         .expect("could not append canvas to body");
 
@@ -68,5 +75,10 @@ pub fn run() -> Result<(), JsValue> {
 
     request_animation_frame(g.borrow().as_ref().unwrap());
 
+    Ok(())
+}
+
+#[wasm_bindgen(start)]
+pub fn main() -> Result<(), JsValue> {
     Ok(())
 }

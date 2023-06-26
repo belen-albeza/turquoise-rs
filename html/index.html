@@ -11,15 +11,33 @@
         align-items: center;
         justify-content: center;
         min-height: 100vh;
+        font-family: monospace;
+      }
+      .wrapper {
+        display: grid;
+        grid-template-rows: auto;
+        row-gap: 1rem;
       }
     </style>
   </head>
   <body>
-    <script src="./turquoise_rs.js"></script>
-    <script>
-      window.addEventListener("load", async () => {
-        await wasm_bindgen("./turquoise_rs_bg.wasm");
-      });
+    <div class="wrapper">
+      <header>
+        <h1>turquoise-rs</h1>
+      </header>
+      <main id="container"></main>
+      <footer>
+        <p>Port of <a href="https://wiki.xxiivv.com/site/turquoise.html" rel="external">turquoise</a> to Rust + Wasm.</p>
+        <p>Crafted with love by <a href="https://ladybenko.net">ladybenko</a>.</p>
+      </footer>
+    </div>
+    <script type="module">
+      import init, { run } from "./turquoise_rs.js";
+      async function exec() {
+        await init("./turquoise_rs_bg.wasm");
+        run("container")
+      }
+      exec();
     </script>
   </body>
 </html>
