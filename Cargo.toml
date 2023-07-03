@@ -8,5 +8,6 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
+js-sys = "0.3.64"
 wasm-bindgen = "0.2.87"
-web-sys = { version = "0.3.64", features = ["CanvasRenderingContext2d", "Document", "HtmlElement", "HtmlCanvasElement", "ImageData", "Window"] }
+web-sys = { version = "0.3.64", features = ["CanvasRenderingContext2d", "console", "Document", "HtmlElement", "HtmlCanvasElement", "ImageData", "Window"] }

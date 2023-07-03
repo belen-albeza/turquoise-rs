@@ -70,7 +70,8 @@
       </footer>
     </div>
     <script type="module">
-      import init, { run } from "./turquoise_rs.js";
+      import init, { run, loadRom } from "./turquoise_rs.js";
+
       async function exec() {
         await init("./turquoise_rs_bg.wasm");
         run("container");
@@ -91,7 +92,7 @@
       const handleFile = async (file) => {
         const buffer = await file.arrayBuffer();
         const rom = new Uint8Array(buffer);
-        console.log(rom);
+        loadRom(rom);
       }
 
       const fetchRom = async (url) => {
