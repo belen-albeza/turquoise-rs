@@ -62,6 +62,7 @@
         <h1>turquoise-rs</h1>
       </header>
       <main id="container">
+        <canvas id="canvas"></canvas>
         <aside class="dropinfo"><p class="dropinfo__message">Drop ROM file to load</p></aside>
       </main>
       <footer>
@@ -70,11 +71,10 @@
       </footer>
     </div>
     <script type="module">
-      import init, { run, loadRom } from "./turquoise_rs.js";
+      import init, { loadRom } from "./turquoise_rs.js";
 
       async function exec() {
         await init("./turquoise_rs_bg.wasm");
-        run("container");
 
         const dropzone = document.querySelector("#container > canvas");
         const dropinfo = document.querySelector(".dropinfo");
@@ -92,7 +92,7 @@
       const handleFile = async (file) => {
         const buffer = await file.arrayBuffer();
         const rom = new Uint8Array(buffer);
-        loadRom(rom);
+        loadRom("canvas", rom);
       }
 
       const fetchRom = async (url) => {
@@ -109,7 +109,6 @@
     </script>
     <script>
       function setupDrop(dropzone, dropinfo) {
-        console.log(dropzone, dropinfo);
         dropzone.addEventListener("dragenter", (evt) => {
           dropinfo.style.display = "flex";
         });
