@@ -4,7 +4,6 @@ use web_sys::ImageData;
 pub type Closure<T> = wasm_bindgen::closure::Closure<T>;
 pub type JsValue = wasm_bindgen::JsValue;
 pub type RenderContext = web_sys::CanvasRenderingContext2d;
-pub type RenderBuffer = web_sys::ImageData;
 
 pub fn window() -> web_sys::Window {
     web_sys::window().expect("no global `window` exists")

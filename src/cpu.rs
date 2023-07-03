@@ -18,8 +18,6 @@ impl CPU {
     }
 
     pub fn tick(&mut self) -> Result<(), String> {
-        self.pc = (self.pc + 1) % (WIDTH * HEIGHT);
-        self.v_buffer[self.pc] = true;
         Ok(())
     }
 
