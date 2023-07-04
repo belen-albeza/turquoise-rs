@@ -32,12 +32,11 @@ pub struct VM {
 }
 
 impl VM {
-    pub fn new(container_id: &str, cpu: CPU) -> Self {
-        let container = wasm::element_by_id(container_id).unwrap_or(wasm::body());
-        let canvas = wasm::create_canvas(WIDTH, HEIGHT);
-        container
-            .append_child(&canvas)
-            .expect("could not append canvas to body");
+    pub fn new(canvas_id: &str, cpu: CPU) -> Self {
+        let canvas: wasm::CanvasElement =
+            wasm::element_by_id(canvas_id).expect("No canvas found in document");
+        canvas.set_width(WIDTH);
+        canvas.set_height(HEIGHT);
 
         let context = wasm::canvas_context(&canvas);
         let buffer = [0; (WIDTH * HEIGHT * 4) as usize];
@@ -49,7 +48,11 @@ impl VM {
         }
     }
 
-    pub fn run(&mut self) -> Result<(), String> {
+    pub fn run(&mut self, rom: &[u8]) -> Result<(), String> {
+        for byte in rom.into_iter() {
+            wasm::log(&format!("{}", byte));
+        }
+
         let cpu = Rc::new(RefCell::new(self.cpu));
         let context = self.context.clone();
         let buffer = Rc::new(RefCell::new(self.buffer));

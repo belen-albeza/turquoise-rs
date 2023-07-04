@@ -29,6 +29,31 @@
         width: calc(272px * var(--screen-scale));
         height: calc(192px * var(--screen-scale));
       }
+
+      #container {
+        display: grid;
+        position: relative;
+      }
+
+      .dropinfo {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        bottom: 0;
+        display: none;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .dropinfo__message {
+        font-size: 1.25rem;
+        font-weight: bold;
+        border: 2px dashed black;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background: #2cb;
+      }
     </style>
   </head>
   <body>
@@ -36,19 +61,82 @@
       <header>
         <h1>turquoise-rs</h1>
       </header>
-      <main id="container"></main>
+      <main id="container">
+        <canvas id="canvas"></canvas>
+        <aside class="dropinfo"><p class="dropinfo__message">Drop ROM file to load</p></aside>
+      </main>
       <footer>
         <p>Port of <a href="https://wiki.xxiivv.com/site/turquoise.html" rel="external">turquoise</a> to Rust + Wasm.</p>
         <p>Crafted with love by <a href="https://ladybenko.net">ladybenko</a>.</p>
       </footer>
     </div>
     <script type="module">
-      import init, { run } from "./turquoise_rs.js";
+      import init, { loadRom } from "./turquoise_rs.js";
+
       async function exec() {
         await init("./turquoise_rs_bg.wasm");
-        run("container")
+
+        const dropzone = document.querySelector("#container > canvas");
+        const dropinfo = document.querySelector(".dropinfo");
+        setupDrop(dropzone, dropinfo);
+
+        const initialRom = "/roms/circle.rom";
+        const rom = await fetchRom(initialRom);
+        if (rom) {
+          handleFile(rom);
+        }
       }
+
       exec();
+
+      const handleFile = async (file) => {
+        const buffer = await file.arrayBuffer();
+        const rom = new Uint8Array(buffer);
+        loadRom("canvas", rom);
+      }
+
+      const fetchRom = async (url) => {
+        try {
+          const response = await fetch(url);
+          return response;
+        }
+        catch (err) {
+          console.error(err);
+        }
+
+        return(undefined);
+      }
+    </script>
+    <script>
+      function setupDrop(dropzone, dropinfo) {
+        dropzone.addEventListener("dragenter", (evt) => {
+          dropinfo.style.display = "flex";
+        });
+
+        dropinfo.addEventListener("dragleave", (evt) => {
+          if (evt.target !== dropinfo) {
+            evt.stopPropagation();
+            return;
+          }
+
+          dropinfo.style.display = "none";
+        });
+
+        dropinfo.addEventListener("dragover", (evt) => {
+          evt.preventDefault();
+        });
+
+        dropinfo.addEventListener("drop", (evt) => {
+          evt.preventDefault();
+          [...evt.dataTransfer.items].forEach((item, i) => {
+            const file = item.getAsFile();
+            if (file) {
+              handleFile(file);
+              dropinfo.style.display = "none";
+            }
+          });
+        }, false);
+      }
     </script>
   </body>
 </html>
