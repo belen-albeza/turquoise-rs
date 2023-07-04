@@ -43,6 +43,7 @@ pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
         .expect("should register `requestAnimationFrame` OK");
 }
 
+#[allow(dead_code)]
 pub fn log(msg: &str) {
     web_sys::console::log_1(&msg.into());
 }

@@ -49,11 +49,9 @@ impl VM {
     }
 
     pub fn run(&mut self, rom: &[u8]) -> Result<(), String> {
-        for byte in rom.into_iter() {
-            wasm::log(&format!("{}", byte));
-        }
-
         let cpu = Rc::new(RefCell::new(self.cpu));
+        cpu.borrow_mut().load_rom(rom);
+
         let context = self.context.clone();
         let buffer = Rc::new(RefCell::new(self.buffer));
 

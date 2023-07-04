@@ -91,6 +91,8 @@
 
       const handleFile = async (file) => {
         const buffer = await file.arrayBuffer();
+        // NOTE: this cannot be a Uint16Array because ROMs might not be padded
+        // and Uint16Array need the data to be even bytes.
         const rom = new Uint8Array(buffer);
         loadRom("canvas", rom);
       }
