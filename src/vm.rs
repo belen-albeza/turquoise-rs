@@ -49,7 +49,7 @@ impl VM {
     }
 
     pub fn run(&mut self, rom: &[u8]) -> Result<(), String> {
-        let cpu = Rc::new(RefCell::new(self.cpu));
+        let cpu = Rc::new(RefCell::new(self.cpu.clone()));
         cpu.borrow_mut().load_rom(rom);
 
         let context = self.context.clone();

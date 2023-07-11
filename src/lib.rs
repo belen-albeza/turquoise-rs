@@ -1,4 +1,5 @@
 mod cpu;
+mod program;
 mod vm;
 mod wasm;
 
