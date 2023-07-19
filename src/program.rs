@@ -1,21 +1,3 @@
-use std::error;
-use std::fmt;
-
-#[derive(Debug)]
-pub enum ProgramError {
-    InvalidRule(Vec<u8>),
-}
-
-impl fmt::Display for ProgramError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::InvalidRule(source) => write!(f, "Cannot parse rule: {:?}", source),
-        }
-    }
-}
-
-impl error::Error for ProgramError {}
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Command {
     PushPop,
@@ -113,6 +95,12 @@ fn half_bytes(source: &[u8], len: usize) -> HalfBytesChunker {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Program {
     pub rules: Vec<Rule>,
+}
+
+impl Default for Program {
+    fn default() -> Self {
+        Self { rules: vec![] }
+    }
 }
 
 impl From<&[u8]> for Program {
