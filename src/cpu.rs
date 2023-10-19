@@ -1,4 +1,4 @@
-use crate::program::Program;
+use crate::program::{Command, Program};
 use std::error;
 use std::fmt;
 
@@ -28,6 +28,7 @@ pub struct CPU {
     cursor: (usize, usize),
     v_buffer: [bool; WIDTH * HEIGHT],
     pc: usize,
+    rule_pc: usize,
     src: Program,
 }
 
@@ -37,16 +38,23 @@ impl CPU {
             cursor: (WIDTH / 2, HEIGHT / 2),
             v_buffer: [false; WIDTH * HEIGHT],
             pc: 0,
+            rule_pc: 0,
             src: Program::default(),
         }
     }
 
     pub fn load_rom(&mut self, rom: &[u8]) {
-        self.src = Program::from(rom)
+        self.src = Program::from(rom);
     }
 
-    pub fn tick(&mut self) -> Result<()> {
-        Ok(())
+    pub fn tick(&mut self) -> Result<bool> {
+        if let Some(cmd) = self.src.get_cmd(self.rule_pc, self.pc) {
+            self.draw_cursor();
+            self.exec_cmd(&cmd)?;
+            Ok(false)
+        } else {
+            Ok(true)
+        }
     }
 
     pub fn cursor(&self) -> (usize, usize) {
@@ -55,6 +63,31 @@ impl CPU {
 
     pub fn v_buffer(&self) -> &[bool; (WIDTH * HEIGHT) as usize] {
         &self.v_buffer
+    }
+
+    fn draw_cursor(&mut self) {
+        let x = self.cursor.0 % WIDTH;
+        let y = self.cursor.1 % HEIGHT;
+
+        let i = y * WIDTH + x;
+        self.v_buffer[i] = true;
+    }
+
+    fn exec_cmd(&mut self, cmd: &Command) -> Result<bool> {
+        let shall_halt = match *cmd {
+            Command::Move(x, y) => self.exec_move_cursor(x as i64, y as i64)?,
+            _ => todo!("to be implemented"),
+        };
+
+        Ok(shall_halt)
+    }
+
+    fn exec_move_cursor(&mut self, x: i64, y: i64) -> Result<bool> {
+        self.cursor.0 = ((self.cursor.0 as i64) + x) as usize;
+        self.cursor.1 = ((self.cursor.1 as i64) + y) as usize;
+        self.pc += 1;
+
+        Ok(false)
     }
 }
 
@@ -86,5 +119,15 @@ mod tests {
                 }]
             }
         );
+    }
+
+    #[test]
+    fn test_exec_move_cursor() {
+        let rom: &[u8] = &[0x02, 0x01, 0x50]; // move 1,-1
+        let mut cpu = any_cpu_with_rom(rom);
+
+        let res = cpu.tick();
+        assert_eq!(res, Ok(false));
+        assert_eq!(cpu.cursor(), (WIDTH / 2 + 1, HEIGHT / 2 - 1));
     }
 }

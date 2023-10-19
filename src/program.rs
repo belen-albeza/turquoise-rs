@@ -97,6 +97,16 @@ pub struct Program {
     pub rules: Vec<Rule>,
 }
 
+impl Program {
+    pub fn get_cmd(&self, rule: usize, pc: usize) -> Option<Command> {
+        if let Some(rule) = self.rules.get(rule) {
+            rule.body.get(pc).copied()
+        } else {
+            None
+        }
+    }
+}
+
 impl Default for Program {
     fn default() -> Self {
         Self { rules: vec![] }
