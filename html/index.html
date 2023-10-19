@@ -83,7 +83,7 @@
         const initialRom = "/roms/circle.rom";
         const rom = await fetchRom(initialRom);
         if (rom) {
-          handleFile(rom);
+          await handleFile(rom);
         }
       }
 
@@ -108,8 +108,7 @@
 
         return(undefined);
       }
-    </script>
-    <script>
+
       function setupDrop(dropzone, dropinfo) {
         dropzone.addEventListener("dragenter", (evt) => {
           dropinfo.style.display = "flex";
