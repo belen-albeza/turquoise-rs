@@ -1,4 +1,5 @@
 mod cpu;
+mod program;
 mod vm;
 mod wasm;
 
@@ -15,6 +16,6 @@ pub fn load_rom(canvas_id: &str, rom: js_sys::Uint8Array) -> Result<(), JsValue>
 }
 
 #[wasm_bindgen(start)]
-pub fn main() -> Result<(), JsValue> {
+pub fn main_js() -> Result<(), JsValue> {
     Ok(())
 }
