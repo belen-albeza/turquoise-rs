@@ -32,6 +32,7 @@ pub struct CPU {
     rule_pc: usize,
     src: Program,
     flip: (i8, i8),
+    is_mirror: bool,
 }
 
 impl CPU {
@@ -43,6 +44,7 @@ impl CPU {
             rule_pc: 0,
             src: Program::default(),
             flip: (1, 1),
+            is_mirror: false,
         }
     }
 
@@ -56,7 +58,9 @@ impl CPU {
             self.exec_cmd(&cmd)?;
             Ok(false)
         } else {
-            Ok(true)
+            self.rule_pc = 0;
+            self.pc = 0;
+            self.tick()
         }
     }
 
@@ -77,9 +81,11 @@ impl CPU {
     }
 
     fn exec_cmd(&mut self, cmd: &Command) -> Result<bool> {
+        // wasm::log(format!("Executing {:?}", cmd).as_str());
         let shall_halt = match *cmd {
             Command::Move(x, y) => self.exec_move_cursor(x as i64, y as i64)?,
             Command::Flip(x, y) => self.exec_flip(x, y)?,
+            Command::Mirror => self.exec_mirror()?,
             _ => {
                 wasm::log(format!("unimplemented! {:?}", cmd).as_str());
                 todo!("to be implemented")
@@ -90,8 +96,10 @@ impl CPU {
     }
 
     fn exec_move_cursor(&mut self, x: i64, y: i64) -> Result<bool> {
-        self.cursor.0 = ((self.cursor.0 as i64) + x * (self.flip.0 as i64)) as usize;
-        self.cursor.1 = ((self.cursor.1 as i64) + y * (self.flip.1 as i64)) as usize;
+        let delta = if self.is_mirror { (y, x) } else { (x, y) };
+        self.cursor.0 = ((self.cursor.0 as i64) + delta.0 * self.flip.0 as i64) as usize;
+        self.cursor.1 = ((self.cursor.1 as i64) + delta.1 * self.flip.1 as i64) as usize;
+
         self.pc += 1;
 
         Ok(false)
@@ -105,6 +113,13 @@ impl CPU {
             self.flip.1 *= -1;
         }
 
+        self.pc += 1;
+
+        Ok(false)
+    }
+
+    fn exec_mirror(&mut self) -> Result<bool> {
+        self.is_mirror = !self.is_mirror;
         self.pc += 1;
 
         Ok(false)
@@ -163,5 +178,19 @@ mod tests {
         res = cpu.tick();
         assert_eq!(res, Ok(false));
         assert_eq!(cpu.cursor(), (WIDTH / 2 - 1, HEIGHT / 2 - 1));
+    }
+
+    #[test]
+    fn test_exec_mirror() {
+        let rom: &[u8] = &[0x02, 0x01, 0x75]; // mirror; move 1,-1
+        let mut cpu = any_cpu_with_rom(rom);
+
+        let mut res = cpu.tick();
+        assert_eq!(res, Ok(false));
+        assert_eq!(cpu.is_mirror, true);
+
+        res = cpu.tick();
+        assert_eq!(res, Ok(false));
+        assert_eq!(cpu.cursor(), (WIDTH / 2 - 1, HEIGHT / 2 + 1));
     }
 }
