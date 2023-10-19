@@ -1,4 +1,5 @@
 use crate::program::{Command, Program};
+use crate::wasm;
 use std::error;
 use std::fmt;
 
@@ -30,6 +31,7 @@ pub struct CPU {
     pc: usize,
     rule_pc: usize,
     src: Program,
+    flip: (i8, i8),
 }
 
 impl CPU {
@@ -40,6 +42,7 @@ impl CPU {
             pc: 0,
             rule_pc: 0,
             src: Program::default(),
+            flip: (1, 1),
         }
     }
 
@@ -76,15 +79,32 @@ impl CPU {
     fn exec_cmd(&mut self, cmd: &Command) -> Result<bool> {
         let shall_halt = match *cmd {
             Command::Move(x, y) => self.exec_move_cursor(x as i64, y as i64)?,
-            _ => todo!("to be implemented"),
+            Command::Flip(x, y) => self.exec_flip(x, y)?,
+            _ => {
+                wasm::log(format!("unimplemented! {:?}", cmd).as_str());
+                todo!("to be implemented")
+            }
         };
 
         Ok(shall_halt)
     }
 
     fn exec_move_cursor(&mut self, x: i64, y: i64) -> Result<bool> {
-        self.cursor.0 = ((self.cursor.0 as i64) + x) as usize;
-        self.cursor.1 = ((self.cursor.1 as i64) + y) as usize;
+        self.cursor.0 = ((self.cursor.0 as i64) + x * (self.flip.0 as i64)) as usize;
+        self.cursor.1 = ((self.cursor.1 as i64) + y * (self.flip.1 as i64)) as usize;
+        self.pc += 1;
+
+        Ok(false)
+    }
+
+    fn exec_flip(&mut self, flip_x: u8, flip_y: u8) -> Result<bool> {
+        if flip_x > 0 {
+            self.flip.0 *= -1;
+        }
+        if flip_y > 0 {
+            self.flip.1 *= -1;
+        }
+
         self.pc += 1;
 
         Ok(false)
@@ -129,5 +149,19 @@ mod tests {
         let res = cpu.tick();
         assert_eq!(res, Ok(false));
         assert_eq!(cpu.cursor(), (WIDTH / 2 + 1, HEIGHT / 2 - 1));
+    }
+
+    #[test]
+    fn test_exec_flip() {
+        let rom: &[u8] = &[0x02, 0x01, 0x35]; // flip 1,0; move 1,-1
+        let mut cpu = any_cpu_with_rom(rom);
+
+        let mut res = cpu.tick();
+        assert_eq!(res, Ok(false));
+        assert_eq!(cpu.flip, (-1, 1));
+
+        res = cpu.tick();
+        assert_eq!(res, Ok(false));
+        assert_eq!(cpu.cursor(), (WIDTH / 2 - 1, HEIGHT / 2 - 1));
     }
 }
