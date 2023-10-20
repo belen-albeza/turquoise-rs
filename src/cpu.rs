@@ -1,5 +1,4 @@
 use crate::program::{Command, Program};
-use crate::wasm;
 use std::error;
 use std::fmt;
 
@@ -24,14 +23,17 @@ impl error::Error for CPUError {}
 
 pub type Result<T> = std::result::Result<T, CPUError>;
 
+type Color = bool;
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct CPU {
     cursor: (isize, isize),
-    v_buffer: [bool; WIDTH * HEIGHT],
+    v_buffer: [Color; WIDTH * HEIGHT],
     src: Program,
     flip: (isize, isize),
     is_mirror: bool,
     is_draw_disabled: bool,
+    color: Color,
 }
 
 impl CPU {
@@ -43,6 +45,7 @@ impl CPU {
             flip: (1, 1),
             is_mirror: false,
             is_draw_disabled: false,
+            color: true,
         }
     }
 
@@ -77,7 +80,7 @@ impl CPU {
         }
 
         let i = (y as usize) * WIDTH + (x as usize);
-        self.v_buffer[i] = true;
+        self.v_buffer[i] = self.color;
     }
 
     fn exec_cmd(&mut self, cmd: &Command) -> Result<bool> {
@@ -86,12 +89,9 @@ impl CPU {
             Command::Flip(x, y) => self.exec_flip(x, y)?,
             Command::Mirror => self.exec_mirror()?,
             Command::Draw => self.exec_draw()?,
+            Command::Color => self.exec_color()?,
             Command::Scale(_) => Ok(false)?, // noop
             Command::PushPop => Ok(false)?,  // noop
-            _ => {
-                wasm::log(format!("unimplemented! {:?}", cmd).as_str());
-                todo!("to be implemented")
-            }
         };
 
         Ok(shall_halt)
@@ -128,6 +128,11 @@ impl CPU {
 
     fn exec_draw(&mut self) -> Result<bool> {
         self.is_draw_disabled = !self.is_draw_disabled;
+        Ok(false)
+    }
+
+    fn exec_color(&mut self) -> Result<bool> {
+        self.color = !self.color;
         Ok(false)
     }
 }
@@ -214,5 +219,26 @@ mod tests {
         res = cpu.tick();
         assert_eq!(res, Ok(false));
         assert_v_buffer_at(&cpu, (WIDTH / 2 + 1, HEIGHT / 2 - 1), false);
+    }
+
+    #[test]
+    fn test_exec_color() {
+        let rom: &[u8] = &[0x04, 0x01, 0x11, 0xc2]; // move 1,0; move 1,0; color; move -1,0
+        let mut cpu = any_cpu_with_rom(rom);
+
+        // move right x2
+        let _ = cpu.tick();
+        let _ = cpu.tick();
+        assert_v_buffer_at(&cpu, (WIDTH / 2 + 1, HEIGHT / 2), true);
+        assert_v_buffer_at(&cpu, (WIDTH / 2 + 2, HEIGHT / 2), true);
+
+        // swap fg/bg colors
+        let res = cpu.tick();
+        assert_eq!(res, Ok(false));
+        assert_eq!(cpu.color, false);
+
+        // move left
+        let _ = cpu.tick();
+        assert_v_buffer_at(&cpu, (WIDTH / 2 + 1, HEIGHT / 2), false);
     }
 }
