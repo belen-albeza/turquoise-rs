@@ -35,9 +35,9 @@ impl From<u8> for Command {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Rule {
-    pub cycles: usize, // # of times to run this rule
-    pub body: Vec<Command>,
-    pub pc: usize,
+    cycles: usize, // # of times to run this rule
+    body: Vec<Command>,
+    pc: usize,
 }
 
 impl From<&[u8]> for Rule {
@@ -110,8 +110,8 @@ fn half_bytes(source: &[u8], len: usize) -> HalfBytesChunker {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Program {
-    pub rules: Vec<Rule>,
-    pub rule_pc: usize,
+    rules: Vec<Rule>,
+    rule_pc: usize,
 }
 
 impl Default for Program {

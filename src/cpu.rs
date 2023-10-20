@@ -131,7 +131,6 @@ impl CPU {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::program::{Command, Rule};
 
     fn any_cpu_with_rom(rom: &[u8]) -> CPU {
         let mut cpu = CPU::new();
@@ -148,21 +147,7 @@ mod tests {
     fn test_load_rom() {
         let rom: &[u8] = &[0x03, 0x01, 0x44, 0x50];
         let cpu = any_cpu_with_rom(rom);
-        assert_eq!(
-            cpu.src,
-            Program {
-                rules: vec![Rule {
-                    cycles: 1,
-                    body: vec![
-                        Command::Move(0, -1),
-                        Command::Move(0, -1),
-                        Command::Move(1, -1)
-                    ],
-                    pc: 0,
-                }],
-                rule_pc: 0,
-            }
-        );
+        assert_eq!(cpu.src, Program::from(rom));
     }
 
     #[test]
