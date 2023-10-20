@@ -26,10 +26,10 @@ pub type Result<T> = std::result::Result<T, CPUError>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct CPU {
-    cursor: (usize, usize),
+    cursor: (isize, isize),
     v_buffer: [bool; WIDTH * HEIGHT],
     src: Program,
-    flip: (i8, i8),
+    flip: (isize, isize),
     is_mirror: bool,
     is_draw_disabled: bool,
 }
@@ -37,7 +37,7 @@ pub struct CPU {
 impl CPU {
     pub fn new() -> Self {
         Self {
-            cursor: (WIDTH / 2, HEIGHT / 2),
+            cursor: ((WIDTH / 2) as isize, (HEIGHT / 2) as isize),
             v_buffer: [false; WIDTH * HEIGHT],
             src: Program::default(),
             flip: (1, 1),
@@ -60,7 +60,7 @@ impl CPU {
         }
     }
 
-    pub fn cursor(&self) -> (usize, usize) {
+    pub fn cursor(&self) -> (isize, isize) {
         self.cursor
     }
 
@@ -69,16 +69,20 @@ impl CPU {
     }
 
     fn draw_cursor(&mut self) {
-        let x = self.cursor.0 % WIDTH;
-        let y = self.cursor.1 % HEIGHT;
+        let x = self.cursor.0;
+        let y = self.cursor.1;
 
-        let i = y * WIDTH + x;
+        if x >= WIDTH as isize || y >= HEIGHT as isize || x < 0 || y < 0 {
+            return;
+        }
+
+        let i = (y as usize) * WIDTH + (x as usize);
         self.v_buffer[i] = true;
     }
 
     fn exec_cmd(&mut self, cmd: &Command) -> Result<bool> {
         let shall_halt = match *cmd {
-            Command::Move(x, y) => self.exec_move_cursor(x as i64, y as i64)?,
+            Command::Move(x, y) => self.exec_move_cursor(x as isize, y as isize)?,
             Command::Flip(x, y) => self.exec_flip(x, y)?,
             Command::Mirror => self.exec_mirror()?,
             Command::Draw => self.exec_draw()?,
@@ -93,10 +97,10 @@ impl CPU {
         Ok(shall_halt)
     }
 
-    fn exec_move_cursor(&mut self, x: i64, y: i64) -> Result<bool> {
+    fn exec_move_cursor(&mut self, x: isize, y: isize) -> Result<bool> {
         let delta = if self.is_mirror { (y, x) } else { (x, y) };
-        self.cursor.0 = ((self.cursor.0 as i64) + delta.0 * self.flip.0 as i64) as usize;
-        self.cursor.1 = ((self.cursor.1 as i64) + delta.1 * self.flip.1 as i64) as usize;
+        self.cursor.0 = self.cursor.0 + delta.0 * self.flip.0;
+        self.cursor.1 = self.cursor.1 + delta.1 * self.flip.1;
 
         if !self.is_draw_disabled {
             self.draw_cursor();
@@ -157,7 +161,10 @@ mod tests {
 
         let res = cpu.tick();
         assert_eq!(res, Ok(false));
-        assert_eq!(cpu.cursor(), (WIDTH / 2 + 1, HEIGHT / 2 - 1));
+        assert_eq!(
+            cpu.cursor(),
+            ((WIDTH / 2 + 1) as isize, (HEIGHT / 2 - 1) as isize)
+        );
         assert_v_buffer_at(&cpu, (WIDTH / 2 + 1, HEIGHT / 2 - 1), true);
     }
 
@@ -172,7 +179,10 @@ mod tests {
 
         res = cpu.tick();
         assert_eq!(res, Ok(false));
-        assert_eq!(cpu.cursor(), (WIDTH / 2 - 1, HEIGHT / 2 - 1));
+        assert_eq!(
+            cpu.cursor(),
+            ((WIDTH / 2 - 1) as isize, (HEIGHT / 2 - 1) as isize)
+        );
     }
 
     #[test]
@@ -186,7 +196,10 @@ mod tests {
 
         res = cpu.tick();
         assert_eq!(res, Ok(false));
-        assert_eq!(cpu.cursor(), (WIDTH / 2 - 1, HEIGHT / 2 + 1));
+        assert_eq!(
+            cpu.cursor(),
+            ((WIDTH / 2 - 1) as isize, (HEIGHT / 2 + 1) as isize)
+        );
     }
 
     #[test]

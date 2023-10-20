@@ -40,6 +40,12 @@ pub struct Rule {
     pc: usize,
 }
 
+impl Rule {
+    fn reset_pc(&mut self) {
+        self.pc = 0;
+    }
+}
+
 impl From<&[u8]> for Rule {
     fn from(source: &[u8]) -> Self {
         let len = source[0];
@@ -114,6 +120,15 @@ pub struct Program {
     rule_pc: usize,
 }
 
+impl Program {
+    fn reset_pc(&mut self) {
+        self.rule_pc = 0;
+        for rule in self.rules.iter_mut() {
+            rule.reset_pc()
+        }
+    }
+}
+
 impl Default for Program {
     fn default() -> Self {
         Self {
@@ -139,7 +154,7 @@ impl Iterator for Program {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.rule_pc >= self.rules.len() {
-            return None;
+            self.reset_pc();
         }
 
         if let Some(cmd) = self.rules[self.rule_pc].next() {
