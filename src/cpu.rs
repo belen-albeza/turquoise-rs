@@ -33,6 +33,7 @@ pub struct CPU {
     src: Program,
     flip: (i8, i8),
     is_mirror: bool,
+    is_draw_disabled: bool,
 }
 
 impl CPU {
@@ -45,6 +46,7 @@ impl CPU {
             src: Program::default(),
             flip: (1, 1),
             is_mirror: false,
+            is_draw_disabled: false,
         }
     }
 
@@ -54,7 +56,6 @@ impl CPU {
 
     pub fn tick(&mut self) -> Result<bool> {
         if let Some(cmd) = self.src.get_cmd(self.rule_pc, self.pc) {
-            self.draw_cursor();
             self.exec_cmd(&cmd)?;
             Ok(false)
         } else {
@@ -86,6 +87,8 @@ impl CPU {
             Command::Move(x, y) => self.exec_move_cursor(x as i64, y as i64)?,
             Command::Flip(x, y) => self.exec_flip(x, y)?,
             Command::Mirror => self.exec_mirror()?,
+            Command::Draw => self.exec_draw()?,
+            Command::Scale(_) => Ok(false)?, // noop
             _ => {
                 wasm::log(format!("unimplemented! {:?}", cmd).as_str());
                 todo!("to be implemented")
@@ -96,6 +99,10 @@ impl CPU {
     }
 
     fn exec_move_cursor(&mut self, x: i64, y: i64) -> Result<bool> {
+        if !self.is_draw_disabled {
+            self.draw_cursor();
+        }
+
         let delta = if self.is_mirror { (y, x) } else { (x, y) };
         self.cursor.0 = ((self.cursor.0 as i64) + delta.0 * self.flip.0 as i64) as usize;
         self.cursor.1 = ((self.cursor.1 as i64) + delta.1 * self.flip.1 as i64) as usize;
@@ -124,6 +131,12 @@ impl CPU {
 
         Ok(false)
     }
+
+    fn exec_draw(&mut self) -> Result<bool> {
+        self.is_draw_disabled = !self.is_draw_disabled;
+        self.pc += 1;
+        Ok(false)
+    }
 }
 
 #[cfg(test)]
@@ -135,6 +148,11 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_rom(rom);
         cpu
+    }
+
+    fn assert_v_buffer_at(cpu: &CPU, position: (usize, usize), value: bool) {
+        let i = position.1 * WIDTH + position.0;
+        assert_eq!(cpu.v_buffer[i], value);
     }
 
     #[test]
@@ -164,6 +182,7 @@ mod tests {
         let res = cpu.tick();
         assert_eq!(res, Ok(false));
         assert_eq!(cpu.cursor(), (WIDTH / 2 + 1, HEIGHT / 2 - 1));
+        assert_v_buffer_at(&cpu, (WIDTH / 2, HEIGHT / 2), true);
     }
 
     #[test]
@@ -192,5 +211,19 @@ mod tests {
         res = cpu.tick();
         assert_eq!(res, Ok(false));
         assert_eq!(cpu.cursor(), (WIDTH / 2 - 1, HEIGHT / 2 + 1));
+    }
+
+    #[test]
+    fn test_exec_draw() {
+        let rom: &[u8] = &[0x02, 0x01, 0xd5]; // draw; move 1,-1
+        let mut cpu = any_cpu_with_rom(rom);
+
+        let mut res = cpu.tick();
+        assert_eq!(res, Ok(false));
+        assert_eq!(cpu.is_draw_disabled, true);
+
+        res = cpu.tick();
+        assert_eq!(res, Ok(false));
+        assert_v_buffer_at(&cpu, (WIDTH / 2 + 1, HEIGHT / 2 - 1), false);
     }
 }
