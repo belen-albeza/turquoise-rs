@@ -58,9 +58,12 @@ impl VM {
         let f = Rc::new(RefCell::new(None));
         let g = f.clone();
         *g.borrow_mut() = Some(wasm::Closure::new(move || {
-            cpu.borrow_mut().tick().unwrap();
+            let shall_halt = cpu.borrow_mut().tick().unwrap();
             render(&context, &cpu, &buffer);
-            wasm::request_animation_frame(f.borrow().as_ref().unwrap());
+
+            if !shall_halt {
+                wasm::request_animation_frame(f.borrow().as_ref().unwrap());
+            }
         }));
 
         wasm::request_animation_frame(g.borrow().as_ref().unwrap());
@@ -87,6 +90,7 @@ fn render(
 
     // draw cursor
     let cursor = cpu.borrow().cursor();
+    // wasm::log(format!("{:?}", cursor).as_str());
     context.set_fill_style(&wasm::JsValue::from(THEME[2]));
     context.fill_rect(cursor.0 as f64, cursor.1 as f64, 1.0, 1.0);
 }

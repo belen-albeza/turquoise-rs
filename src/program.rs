@@ -35,20 +35,36 @@ impl From<u8> for Command {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Rule {
-    pub cycles: u8, // # of times to run this rule
-    pub body: Vec<Command>,
+    cycles: usize, // # of times to run this rule
+    body: Vec<Command>,
+    pc: usize,
 }
 
 impl From<&[u8]> for Rule {
     fn from(source: &[u8]) -> Self {
         let len = source[0];
-        let cycles = source[1];
+        let cycles = source[1] as usize;
         let commands_iter = half_bytes(&source[2..], len as usize);
 
         Rule {
             cycles,
             body: commands_iter.map(Command::from).collect(),
+            pc: 0,
         }
+    }
+}
+
+impl Iterator for Rule {
+    type Item = Command;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pc >= self.body.len() * self.cycles {
+            return None;
+        }
+
+        let i = self.pc % self.body.len();
+        self.pc += 1;
+        self.body.get(i).copied()
     }
 }
 
@@ -94,12 +110,16 @@ fn half_bytes(source: &[u8], len: usize) -> HalfBytesChunker {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Program {
-    pub rules: Vec<Rule>,
+    rules: Vec<Rule>,
+    rule_pc: usize,
 }
 
 impl Default for Program {
     fn default() -> Self {
-        Self { rules: vec![] }
+        Self {
+            rules: vec![],
+            rule_pc: 0,
+        }
     }
 }
 
@@ -109,6 +129,24 @@ impl From<&[u8]> for Program {
 
         Program {
             rules: rules_iter.map(Rule::from).collect(),
+            rule_pc: 0,
+        }
+    }
+}
+
+impl Iterator for Program {
+    type Item = Command;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.rule_pc >= self.rules.len() {
+            return None;
+        }
+
+        if let Some(cmd) = self.rules[self.rule_pc].next() {
+            Some(cmd)
+        } else {
+            self.rule_pc += 1;
+            self.next()
         }
     }
 }
@@ -176,7 +214,8 @@ mod tests {
                     Command::Move(0, -1),
                     Command::Move(0, -1),
                     Command::Move(1, -1),
-                ]
+                ],
+                pc: 0,
             }
         );
     }
@@ -186,7 +225,8 @@ mod tests {
         assert_eq!(
             Program::from([0x03u8, 0x01u8, 0x44u8, 0x50u8].as_slice()),
             Program {
-                rules: vec![Rule::from([0x03u8, 0x01u8, 0x44u8, 0x50u8].as_slice()),]
+                rules: vec![Rule::from([0x03u8, 0x01u8, 0x44u8, 0x50u8].as_slice()),],
+                rule_pc: 0,
             }
         );
     }
@@ -200,7 +240,8 @@ mod tests {
                     Rule::from([0x01u8, 0x01u8, 0xd0u8].as_slice()),
                     Rule::from([0x01u8, 0x40u8, 0x20u8].as_slice()),
                     Rule::from([0x01u8, 0x10u8, 0x80u8].as_slice())
-                ]
+                ],
+                rule_pc: 0,
             }
         );
     }
