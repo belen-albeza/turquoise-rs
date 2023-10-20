@@ -112,7 +112,7 @@
         const romSelector = document.querySelector("#rom-selector");
         setupRomSelector(romSelector, initialRom);
 
-        const rom = await fetchRom(`/roms/${initialRom}`);
+        const rom = await fetchRom(`roms/${initialRom}`);
         if (rom) {
           await handleFile(rom);
         }
@@ -175,7 +175,7 @@
         defaultOption.selected = true;
 
         selector.addEventListener("change", async (event) => {
-          const romUrl = `/roms/${event.target.value}`;
+          const romUrl = `roms/${event.target.value}`;
           const rom = await fetchRom(romUrl);
           if (rom) {
             await handleFile(rom);
