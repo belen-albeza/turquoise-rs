@@ -2,6 +2,8 @@
 
 Port to Rust + Wasm of [Turquoise](https://wiki.xxiivv.com/site/turquoise.html), a plotting VM originally made for Uxn ([source code here](https://git.sr.ht/~rabbits/turquoise)).
 
+You can see a live build on https://belen-albeza.github.io/turquoise-rs
+
 ## Status
 
 Implemented opcodes:
