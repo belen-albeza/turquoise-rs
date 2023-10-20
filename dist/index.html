@@ -1,0 +1,187 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --screen-scale: 3;
+      }
+
+      body {
+        display: grid;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: monospace;
+      }
+      .wrapper {
+        display: grid;
+        grid-template-rows: auto;
+        row-gap: 1rem;
+      }
+
+      canvas {
+        image-rendering: crisp-edges;
+        image-rendering: pixelated;
+        width: calc(272px * var(--screen-scale));
+        height: calc(192px * var(--screen-scale));
+      }
+
+      #container {
+        display: grid;
+        position: relative;
+      }
+
+      .dropinfo {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        bottom: 0;
+        display: none;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .dropinfo__message {
+        font-size: 1.25rem;
+        font-weight: bold;
+        border: 2px dashed black;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background: #2cb;
+      }
+
+      .main-header {
+        display: grid;
+        row-gap: 1rem;
+      }
+
+      .load-wrapper {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 1ch;
+        align-items: center;
+      }
+
+      label {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="main-header">
+        <h1>turquoise-rs</h1>
+        <aside class="load-wrapper">
+          <p><b>Drag & Drop</b> a ROM file to load, or</p>
+          <form>
+            <label>Load pre-made ROM
+              <select id="rom-selector">
+                <option value="permaflower.rom">permaflower</option>
+                <option value="xxiivv.rom">xxiivv</option>
+                <option value="skull.rom">skull</option>
+              </select>
+            </label>
+          </form>
+        </aside>
+      </header>
+      <main id="container">
+        <canvas id="canvas"></canvas>
+        <aside class="dropinfo"><p class="dropinfo__message">Drop ROM file to load</p></aside>
+      </main>
+      <footer>
+        <p>Port of <a href="https://wiki.xxiivv.com/site/turquoise.html" rel="external">turquoise</a> to Rust + Wasm.</p>
+        <p>Crafted with love by <a href="https://ladybenko.net">ladybenko</a>.</p>
+      </footer>
+    </div>
+    <script type="module">
+      import init, { loadRom } from "./turquoise_rs.js";
+
+      async function exec() {
+        await init("./turquoise_rs_bg.wasm");
+
+        const dropzone = document.querySelector("#container > canvas");
+        const dropinfo = document.querySelector(".dropinfo");
+        setupDrop(dropzone, dropinfo);
+
+        const initialRom = "permaflower.rom";
+        const romSelector = document.querySelector("#rom-selector");
+        setupRomSelector(romSelector, initialRom);
+
+        const rom = await fetchRom(`/roms/${initialRom}`);
+        if (rom) {
+          await handleFile(rom);
+        }
+      }
+
+      exec();
+
+      const handleFile = async (file) => {
+        const buffer = await file.arrayBuffer();
+        // NOTE: this cannot be a Uint16Array because ROMs might not be padded
+        // and Uint16Array need the data to be even bytes.
+        const rom = new Uint8Array(buffer);
+        loadRom("canvas", rom);
+      }
+
+      const fetchRom = async (url) => {
+        try {
+          const response = await fetch(url);
+          return response;
+        }
+        catch (err) {
+          console.error(err);
+        }
+
+        return(undefined);
+      }
+
+      function setupDrop(dropzone, dropinfo) {
+        dropzone.addEventListener("dragenter", (evt) => {
+          dropinfo.style.display = "flex";
+        });
+
+        dropinfo.addEventListener("dragleave", (evt) => {
+          if (evt.target !== dropinfo) {
+            evt.stopPropagation();
+            return;
+          }
+
+          dropinfo.style.display = "none";
+        });
+
+        dropinfo.addEventListener("dragover", (evt) => {
+          evt.preventDefault();
+        });
+
+        dropinfo.addEventListener("drop", (evt) => {
+          evt.preventDefault();
+          [...evt.dataTransfer.items].forEach((item, i) => {
+            const file = item.getAsFile();
+            if (file) {
+              handleFile(file);
+              dropinfo.style.display = "none";
+            }
+          });
+        }, false);
+      }
+
+      function setupRomSelector(selector, initialRom) {
+        const defaultOption = selector.querySelector(`option[value="${initialRom}"]`);
+        defaultOption.selected = true;
+
+        selector.addEventListener("change", async (event) => {
+          const romUrl = `/roms/${event.target.value}`;
+          const rom = await fetchRom(romUrl);
+          if (rom) {
+            await handleFile(rom);
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
