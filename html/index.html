@@ -54,12 +54,39 @@
         border-radius: 0.5rem;
         background: #2cb;
       }
+
+      .main-header {
+        display: grid;
+        row-gap: 1rem;
+      }
+
+      .load-wrapper {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 1ch;
+        align-items: center;
+      }
+
+      label {
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
     <div class="wrapper">
-      <header>
+      <header class="main-header">
         <h1>turquoise-rs</h1>
+        <aside class="load-wrapper">
+          <p><b>Drag & Drop</b> a ROM file to load, or</p>
+          <form>
+            <label>Load pre-made ROM
+              <select id="rom-selector">
+                <option value="permaflower.rom">permaflower</option>
+                <option value="xxiivv.rom">xxiivv</option>
+              </select>
+            </label>
+          </form>
+        </aside>
       </header>
       <main id="container">
         <canvas id="canvas"></canvas>
@@ -80,8 +107,11 @@
         const dropinfo = document.querySelector(".dropinfo");
         setupDrop(dropzone, dropinfo);
 
-        const initialRom = "/roms/xxiivv.rom";
-        const rom = await fetchRom(initialRom);
+        const initialRom = "permaflower.rom";
+        const romSelector = document.querySelector("#rom-selector");
+        setupRomSelector(romSelector, initialRom);
+
+        const rom = await fetchRom(`/roms/${initialRom}`);
         if (rom) {
           await handleFile(rom);
         }
@@ -137,6 +167,19 @@
             }
           });
         }, false);
+      }
+
+      function setupRomSelector(selector, initialRom) {
+        const defaultOption = selector.querySelector(`option[value="${initialRom}"]`);
+        defaultOption.selected = true;
+
+        selector.addEventListener("change", async (event) => {
+          const romUrl = `/roms/${event.target.value}`;
+          const rom = await fetchRom(romUrl);
+          if (rom) {
+            await handleFile(rom);
+          }
+        });
       }
     </script>
   </body>
