@@ -28,8 +28,6 @@ pub type Result<T> = std::result::Result<T, CPUError>;
 pub struct CPU {
     cursor: (usize, usize),
     v_buffer: [bool; WIDTH * HEIGHT],
-    pc: usize,
-    rule_pc: usize,
     src: Program,
     flip: (i8, i8),
     is_mirror: bool,
@@ -41,8 +39,6 @@ impl CPU {
         Self {
             cursor: (WIDTH / 2, HEIGHT / 2),
             v_buffer: [false; WIDTH * HEIGHT],
-            pc: 0,
-            rule_pc: 0,
             src: Program::default(),
             flip: (1, 1),
             is_mirror: false,
@@ -55,13 +51,12 @@ impl CPU {
     }
 
     pub fn tick(&mut self) -> Result<bool> {
-        if let Some(cmd) = self.src.get_cmd(self.rule_pc, self.pc) {
-            self.exec_cmd(&cmd)?;
-            Ok(false)
-        } else {
-            self.rule_pc = 0;
-            self.pc = 0;
-            self.tick()
+        match self.src.next() {
+            Some(cmd) => {
+                self.exec_cmd(&cmd)?;
+                Ok(false)
+            }
+            None => Ok(true),
         }
     }
 
@@ -107,8 +102,6 @@ impl CPU {
         self.cursor.0 = ((self.cursor.0 as i64) + delta.0 * self.flip.0 as i64) as usize;
         self.cursor.1 = ((self.cursor.1 as i64) + delta.1 * self.flip.1 as i64) as usize;
 
-        self.pc += 1;
-
         Ok(false)
     }
 
@@ -120,21 +113,17 @@ impl CPU {
             self.flip.1 *= -1;
         }
 
-        self.pc += 1;
-
         Ok(false)
     }
 
     fn exec_mirror(&mut self) -> Result<bool> {
         self.is_mirror = !self.is_mirror;
-        self.pc += 1;
 
         Ok(false)
     }
 
     fn exec_draw(&mut self) -> Result<bool> {
         self.is_draw_disabled = !self.is_draw_disabled;
-        self.pc += 1;
         Ok(false)
     }
 }
@@ -168,8 +157,10 @@ mod tests {
                         Command::Move(0, -1),
                         Command::Move(0, -1),
                         Command::Move(1, -1)
-                    ]
-                }]
+                    ],
+                    pc: 0,
+                }],
+                rule_pc: 0,
             }
         );
     }
