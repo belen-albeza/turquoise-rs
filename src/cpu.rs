@@ -77,13 +77,13 @@ impl CPU {
     }
 
     fn exec_cmd(&mut self, cmd: &Command) -> Result<bool> {
-        // wasm::log(format!("Executing {:?}", cmd).as_str());
         let shall_halt = match *cmd {
             Command::Move(x, y) => self.exec_move_cursor(x as i64, y as i64)?,
             Command::Flip(x, y) => self.exec_flip(x, y)?,
             Command::Mirror => self.exec_mirror()?,
             Command::Draw => self.exec_draw()?,
             Command::Scale(_) => Ok(false)?, // noop
+            Command::PushPop => Ok(false)?,  // noop
             _ => {
                 wasm::log(format!("unimplemented! {:?}", cmd).as_str());
                 todo!("to be implemented")
@@ -94,13 +94,13 @@ impl CPU {
     }
 
     fn exec_move_cursor(&mut self, x: i64, y: i64) -> Result<bool> {
-        if !self.is_draw_disabled {
-            self.draw_cursor();
-        }
-
         let delta = if self.is_mirror { (y, x) } else { (x, y) };
         self.cursor.0 = ((self.cursor.0 as i64) + delta.0 * self.flip.0 as i64) as usize;
         self.cursor.1 = ((self.cursor.1 as i64) + delta.1 * self.flip.1 as i64) as usize;
+
+        if !self.is_draw_disabled {
+            self.draw_cursor();
+        }
 
         Ok(false)
     }
@@ -158,7 +158,7 @@ mod tests {
         let res = cpu.tick();
         assert_eq!(res, Ok(false));
         assert_eq!(cpu.cursor(), (WIDTH / 2 + 1, HEIGHT / 2 - 1));
-        assert_v_buffer_at(&cpu, (WIDTH / 2, HEIGHT / 2), true);
+        assert_v_buffer_at(&cpu, (WIDTH / 2 + 1, HEIGHT / 2 - 1), true);
     }
 
     #[test]
